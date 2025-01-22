@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>order-tracker display</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        main {
+            flex-grow: 1;
+            display: grid;
+            grid-template-columns: 3fr 3fr 4fr;
+
+            background-color: black;
+            gap: 0.5em;
+        }
+
+        main > div {
+            background-color: white;
+            color: black;
+        }
+
+        .pane-header {
+            height: 2em;
+            font-weight: bold;
+            font-size: 5vh;
+            text-align: center;
+            padding-top: 0.375em;
+        }
+
+        #preparing-pane > .pane-header {
+            background-color: green;
+            color: white;
+        }
+
+        #finished-pane > .pane-header {
+            background-color: rgb(75, 75, 75);
+            color: white;
+        }
+
+        .pane-numbers {
+            height: 82.5vh;
+
+            font-size: 8vh;
+            font-weight: 900;
+
+            display: flex;
+            flex-direction: column;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        footer {
+            height: 1.5em;
+            background-color: black;
+            color: white;
+            font-weight: bold;
+            font-size: 5vh;
+            
+            display: grid;
+            grid-template-columns: 1.25em auto;
+            padding-top: 0.125em;
+        }
+
+    </style>
+</head>
+<body>
+    <main>
+        <div id="preparing-pane">
+            <!-- Preparing... -->
+            <div class="pane-header">In Zubereitung</div>
+            <div class="pane-numbers">
+                <!-- 101 102 103... -->
+            </div>
+        </div>
+        <div id="finished-pane">
+            <!-- Please collect... -->
+            <div class="pane-header">Abholbereit</div>
+            <div class="pane-numbers">
+
+            </div>
+        </div>
+        <div id="advertisement-pane" style="height: 92.5vh">
+            <!-- Advertisement -->
+            <video style="object-fit: cover; width: 40vw; height: 92.5vh; padding: 0;" src="ad-video.mp4" autoplay loop></video>
+        </div>
+    </main>
+    <footer>
+        <!-- quick text at bottom, maybe marquee? -->
+        <svg id="info" fill="#ffffff" version="1.1" viewBox="0 0 416.979 416.979" style="height: 1em; width: 1em; margin: 0.125em; aspect-ratio: 1">
+            <g>
+                <path d="M356.004,61.156c-81.37-81.47-213.377-81.551-294.848-0.182c-81.47,81.371-81.552,213.379-0.181,294.85
+                    c81.369,81.47,213.378,81.551,294.849,0.181C437.293,274.636,437.375,142.626,356.004,61.156z M237.6,340.786
+                    c0,3.217-2.607,5.822-5.822,5.822h-46.576c-3.215,0-5.822-2.605-5.822-5.822V167.885c0-3.217,2.607-5.822,5.822-5.822h46.576
+                    c3.215,0,5.822,2.604,5.822,5.822V340.786z M208.49,137.901c-18.618,0-33.766-15.146-33.766-33.765
+                    c0-18.617,15.147-33.766,33.766-33.766c18.619,0,33.766,15.148,33.766,33.766C242.256,122.755,227.107,137.901,208.49,137.901z"/>
+            </g>
+        </svg>
+        <marquee loop="-1" scrollamount="20" behaviour="slide">
+            +++ NEU NEU NEU +++ Jetzt Döner für wenig geld bei argutia. Zugreifen!
+        </marquee>
+    </footer>
+    <script type="application/javascript">
+        function parseAndUpdate(jsonString) {
+            data = JSON.parse(jsonString)
+
+            preparingHTML = ""
+            
+            if (data.preparing) {
+                for (number of data.preparing) {
+                    preparingHTML += `<span>${number}</span>`
+                }
+            }
+
+            document.querySelector('#preparing-pane .pane-numbers').innerHTML = preparingHTML
+
+            finishedHTML = ""
+            
+            if (data.finished) {
+                for (number of data.finished) {
+                    finishedHTML += `<span>${number}</span>`
+                }
+            }
+
+            document.querySelector('#finished-pane .pane-numbers').innerHTML = finishedHTML
+        }
+
+        let timeout = null
+        
+        const socket = new WebSocket("ws://localhost:8081");
+
+        // Connection opened
+        socket.addEventListener("open", (event) => {
+            // we don't need to send anything
+            //socket.send("register");
+        });
+
+        // Listen for messages
+        socket.addEventListener("message", (event) => {
+            console.debug(event.data);
+            try {
+                parseAndUpdate(event.data)
+            } catch (error) {
+                document.getElementById('info').style.fill = 'red'
+                
+                if (timeout != null) {
+                    clearTimeout(timeout)
+                }
+
+                // make the info icon red for 30 seconds
+                // TODO: send this error somewhere useful (telegram?)
+
+                timeout = setTimeout(() => {
+                    document.getElementById('info').style.fill = 'white'    
+                }, 30 * 1000)
+            }
+        });
+    </script>
+</body>
+</html>
